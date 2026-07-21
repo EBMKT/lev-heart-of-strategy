@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Início — LEV" },
+      { title: "LEV" },
       { name: "description", content: "Sua central de comando pessoal LEV." },
     ],
   }),

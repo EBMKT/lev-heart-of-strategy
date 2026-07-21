@@ -75,23 +75,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "LEV — Central de Comando" },
+      { title: "LEV" },
       {
         name: "description",
-        content: "LEV, o assistente estratégico de IA de Eduard. Briefings, projetos e conteúdo em um só lugar.",
+        content: "Sua central de comando pessoal LEV.",
       },
       { name: "theme-color", content: "#0A0B0D" },
-      { property: "og:title", content: "LEV — Central de Comando" },
+      { property: "og:title", content: "LEV" },
       {
         property: "og:description",
-        content: "Assistente estratégico pessoal de IA. Coração e leão. Sofisticado, direto, íntimo.",
+        content: "Sua central de comando pessoal LEV.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "LEV" },
+      { name: "twitter:description", content: "Sua central de comando pessoal LEV." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/dfd9f01c-076e-46b6-9fff-3d434b4db6d0/id-preview-b625c58d--94b7f042-5a95-4264-a584-bd0722999abb.lovable.app-1784600573339.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/dfd9f01c-076e-46b6-9fff-3d434b4db6d0/id-preview-b625c58d--94b7f042-5a95-4264-a584-bd0722999abb.lovable.app-1784600573339.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
