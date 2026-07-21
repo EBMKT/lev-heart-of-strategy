@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Send, Volume2, VolumeX, Loader2 } from "lucide-react";
+import { AudioLines, Mic, MicOff, Send, Volume2, VolumeX, Loader2, X } from "lucide-react";
 
 import { AppShell } from "@/components/lev/app-shell";
 import { LevEmblem } from "@/components/lev/emblem";
@@ -22,6 +22,15 @@ export const Route = createFileRoute("/chat")({
 });
 
 type Msg = { role: "user" | "model"; text: string };
+type VoiceState = "idle" | "listening" | "thinking" | "speaking";
+
+function getSR(): (new () => SpeechRecognitionLike) | null {
+  const w = window as unknown as {
+    SpeechRecognition?: new () => SpeechRecognitionLike;
+    webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+  };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
 
 function ChatPage() {
   const [cfg, setCfg] = useState<LevConfig | null>(null);
@@ -32,15 +41,32 @@ function ChatPage() {
   const [autoVoice, setAutoVoice] = useState(false);
   const [listening, setListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Modo Voz (JARVIS)
+  const [voiceMode, setVoiceMode] = useState(false);
+  const [voiceState, setVoiceState] = useState<VoiceState>("idle");
+  const [lastHeard, setLastHeard] = useState("");
+  const [lastReply, setLastReply] = useState("");
+  const voiceModeRef = useRef(false);
+  const messagesRef = useRef<Msg[]>([]);
+  const recRef = useRef<SpeechRecognitionLike | null>(null);
+
   const contextRef = useRef<string>("");
-  const recognitionRef = useRef<{ stop: () => void } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadLevConfig().then(setCfg);
     buildLevContext().then((c) => (contextRef.current = c));
-    return () => stopLevVoice();
+    return () => {
+      voiceModeRef.current = false;
+      recRef.current?.stop();
+      stopLevVoice();
+    };
   }, []);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -64,7 +90,7 @@ function ChatPage() {
     if (!text || busy || !cfg) return;
     setInput("");
     setError(null);
-    const history: Msg[] = [...messages, { role: "user", text }];
+    const history: Msg[] = [...messagesRef.current, { role: "user", text }];
     setMessages(history);
     setBusy(true);
     try {
@@ -79,21 +105,111 @@ function ChatPage() {
     }
   };
 
-  const toggleMic = () => {
-    if (listening) {
-      recognitionRef.current?.stop();
+  // ---------- MODO VOZ (conversa contínua) ----------
+
+  const listenOnce = () => {
+    if (!voiceModeRef.current) return;
+    const SR = getSR();
+    if (!SR) {
+      setError("Seu navegador não suporta reconhecimento de voz. Use Chrome ou Edge.");
+      exitVoiceMode();
       return;
     }
-    const w = window as unknown as {
-      SpeechRecognition?: new () => SpeechRecognitionLike;
-      webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+    const rec = new SR();
+    recRef.current = rec;
+    rec.lang = "pt-BR";
+    rec.interimResults = false;
+    let gotResult = false;
+    rec.onresult = (ev) => {
+      const transcript = ev.results?.[0]?.[0]?.transcript ?? "";
+      if (transcript.trim()) {
+        gotResult = true;
+        void voiceTurn(transcript.trim());
+      }
     };
-    const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    rec.onend = () => {
+      // Silêncio: volta a ouvir enquanto o modo voz estiver ativo
+      if (voiceModeRef.current && !gotResult) {
+        setTimeout(() => listenOnce(), 250);
+      }
+    };
+    rec.onerror = () => {
+      if (voiceModeRef.current && !gotResult) {
+        setTimeout(() => listenOnce(), 600);
+      }
+    };
+    setVoiceState("listening");
+    try {
+      rec.start();
+    } catch {
+      /* já iniciado */
+    }
+  };
+
+  const voiceTurn = async (text: string) => {
+    if (!cfg || !voiceModeRef.current) return;
+    setLastHeard(text);
+    setVoiceState("thinking");
+    const history: Msg[] = [...messagesRef.current, { role: "user", text }];
+    setMessages(history);
+    try {
+      const reply = await askLev(cfg, history, contextRef.current);
+      if (!voiceModeRef.current) return;
+      setMessages([...history, { role: "model", text: reply }]);
+      setLastReply(reply);
+      setVoiceState("speaking");
+      const audio = await speakWithLev(cfg, reply);
+      audio.onended = () => {
+        if (voiceModeRef.current) listenOnce();
+      };
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "LEV encontrou um problema.");
+      if (voiceModeRef.current) setTimeout(() => listenOnce(), 1200);
+    }
+  };
+
+  const enterVoiceMode = () => {
+    if (!cfg?.elevenKey || !cfg?.geminiKey) {
+      setError("Para o Modo Voz, adicione as chaves do Gemini e do ElevenLabs em Ajustes.");
+      return;
+    }
+    setError(null);
+    setLastHeard("");
+    setLastReply("");
+    setVoiceMode(true);
+    voiceModeRef.current = true;
+    listenOnce();
+  };
+
+  const exitVoiceMode = () => {
+    voiceModeRef.current = false;
+    setVoiceMode(false);
+    setVoiceState("idle");
+    recRef.current?.stop();
+    stopLevVoice();
+  };
+
+  // Toque durante a fala interrompe LEV e volta a ouvir
+  const interrupt = () => {
+    if (voiceState === "speaking") {
+      stopLevVoice();
+      listenOnce();
+    }
+  };
+
+  // ---------- Microfone avulso (uma frase) ----------
+  const toggleMic = () => {
+    if (listening) {
+      recRef.current?.stop();
+      return;
+    }
+    const SR = getSR();
     if (!SR) {
       setError("Seu navegador não suporta reconhecimento de voz. Use Chrome ou Edge.");
       return;
     }
     const rec = new SR();
+    recRef.current = rec;
     rec.lang = "pt-BR";
     rec.interimResults = false;
     rec.onresult = (ev) => {
@@ -103,9 +219,15 @@ function ChatPage() {
     };
     rec.onend = () => setListening(false);
     rec.onerror = () => setListening(false);
-    recognitionRef.current = rec;
     setListening(true);
     rec.start();
+  };
+
+  const VOICE_LABEL: Record<VoiceState, string> = {
+    idle: "",
+    listening: "Estou ouvindo…",
+    thinking: "Pensando…",
+    speaking: "Toque para interromper",
   };
 
   return (
@@ -121,6 +243,13 @@ function ChatPage() {
             </p>
           </div>
           <button
+            onClick={enterVoiceMode}
+            className="flex items-center gap-2 rounded-full border border-gold/60 px-4 py-2.5 text-sm text-gold shadow-gold transition hover:bg-gold/10"
+            title="Conversar por voz, mãos livres"
+          >
+            <AudioLines className="h-4 w-4" /> Modo Voz
+          </button>
+          <button
             onClick={() => {
               if (speaking) {
                 stopLevVoice();
@@ -132,7 +261,7 @@ function ChatPage() {
             className={cn(
               "rounded-full border p-2.5 transition",
               autoVoice
-                ? "border-gold/60 text-gold shadow-gold"
+                ? "border-gold/60 text-gold"
                 : "border-border/60 text-muted-foreground hover:text-foreground",
             )}
           >
@@ -146,7 +275,7 @@ function ChatPage() {
             <div className="mt-10 text-center">
               <p className="font-serif text-2xl text-foreground/90">Como posso servir hoje?</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                Pergunte sobre seus projetos, peça um plano ou apenas pense em voz alta.
+                Toque em <span className="text-gold">Modo Voz</span> e fale comigo — ou escreva abaixo.
               </p>
             </div>
           )}
@@ -201,7 +330,7 @@ function ChatPage() {
               "rounded-full p-2.5 transition",
               listening ? "bg-gold text-gold-foreground animate-pulse" : "text-muted-foreground hover:text-gold",
             )}
-            title="Falar com LEV"
+            title="Ditar uma mensagem"
           >
             {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
           </button>
@@ -221,6 +350,67 @@ function ChatPage() {
           </button>
         </form>
       </div>
+
+      {/* ---------- OVERLAY MODO VOZ ---------- */}
+      {voiceMode && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/98 backdrop-blur-xl"
+          onClick={interrupt}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              exitVoiceMode();
+            }}
+            className="absolute right-6 top-6 rounded-full border border-border/60 p-3 text-muted-foreground transition hover:text-foreground"
+            title="Encerrar Modo Voz"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          <div
+            className={cn(
+              "transition-transform duration-700",
+              voiceState === "listening" && "scale-100",
+              voiceState === "thinking" && "scale-90",
+              voiceState === "speaking" && "scale-110",
+            )}
+          >
+            <LevEmblem size={180} active={voiceState !== "idle"} />
+          </div>
+
+          <p
+            className={cn(
+              "mt-10 text-xs uppercase tracking-[0.4em]",
+              voiceState === "listening" ? "text-gold animate-pulse" : "text-gold/70",
+            )}
+          >
+            {VOICE_LABEL[voiceState]}
+          </p>
+
+          <div className="mt-8 max-w-xl px-8 text-center">
+            {lastHeard && (
+              <p className="mb-3 text-sm italic text-muted-foreground">“{lastHeard}”</p>
+            )}
+            {lastReply && voiceState !== "listening" && (
+              <p className="max-h-40 overflow-y-auto text-base leading-relaxed text-foreground/90">
+                {lastReply}
+              </p>
+            )}
+            {!lastHeard && voiceState === "listening" && (
+              <p className="text-sm text-muted-foreground">
+                Pode falar naturalmente. Eu respondo e volto a te ouvir.
+              </p>
+            )}
+          </div>
+
+          {error && (
+            <p className="mt-6 max-w-md rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-2 text-center text-xs text-destructive">
+              {error}
+            </p>
+          )}
+        </div>
+      )}
     </AppShell>
   );
 }
