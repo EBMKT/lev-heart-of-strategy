@@ -14,7 +14,197 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      briefings: {
+        Row: {
+          audio_url: string | null
+          conteudo: Json
+          created_at: string
+          data: string
+          id: string
+          periodo: Database["public"]["Enums"]["briefing_periodo"]
+          user_id: string
+        }
+        Insert: {
+          audio_url?: string | null
+          conteudo?: Json
+          created_at?: string
+          data?: string
+          id?: string
+          periodo: Database["public"]["Enums"]["briefing_periodo"]
+          user_id: string
+        }
+        Update: {
+          audio_url?: string | null
+          conteudo?: Json
+          created_at?: string
+          data?: string
+          id?: string
+          periodo?: Database["public"]["Enums"]["briefing_periodo"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      posts: {
+        Row: {
+          caption: string | null
+          created_at: string
+          hashtags: string[]
+          id: string
+          plataforma: Database["public"]["Enums"]["post_platform"]
+          scheduled_at: string | null
+          script: string | null
+          status: Database["public"]["Enums"]["post_status"]
+          titulo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          hashtags?: string[]
+          id?: string
+          plataforma: Database["public"]["Enums"]["post_platform"]
+          scheduled_at?: string | null
+          script?: string | null
+          status?: Database["public"]["Enums"]["post_status"]
+          titulo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          hashtags?: string[]
+          id?: string
+          plataforma?: Database["public"]["Enums"]["post_platform"]
+          scheduled_at?: string | null
+          script?: string | null
+          status?: Database["public"]["Enums"]["post_status"]
+          titulo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          elevenlabs_voice_id: string | null
+          id: string
+          lev_tone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          elevenlabs_voice_id?: string | null
+          id: string
+          lev_tone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          elevenlabs_voice_id?: string | null
+          id?: string
+          lev_tone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      project_updates: {
+        Row: {
+          ai_analysis: string | null
+          conteudo: string
+          created_at: string
+          id: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          ai_analysis?: string | null
+          conteudo: string
+          created_at?: string
+          id?: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          ai_analysis?: string | null
+          conteudo?: string
+          created_at?: string
+          id?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_updates_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          prioridade: Database["public"]["Enums"]["project_priority"]
+          progresso: number
+          proximas_acoes: Json
+          status: Database["public"]["Enums"]["project_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          prioridade?: Database["public"]["Enums"]["project_priority"]
+          progresso?: number
+          proximas_acoes?: Json
+          status?: Database["public"]["Enums"]["project_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          prioridade?: Database["public"]["Enums"]["project_priority"]
+          progresso?: number
+          proximas_acoes?: Json
+          status?: Database["public"]["Enums"]["project_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          config: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +213,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      briefing_periodo: "manha" | "tarde" | "noite"
+      post_platform: "instagram" | "tiktok"
+      post_status: "ideia" | "rascunho" | "aprovado" | "publicado"
+      project_priority: "baixa" | "media" | "alta" | "critica"
+      project_status: "ativo" | "pausado" | "concluido" | "arquivado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +344,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      briefing_periodo: ["manha", "tarde", "noite"],
+      post_platform: ["instagram", "tiktok"],
+      post_status: ["ideia", "rascunho", "aprovado", "publicado"],
+      project_priority: ["baixa", "media", "alta", "critica"],
+      project_status: ["ativo", "pausado", "concluido", "arquivado"],
+    },
   },
 } as const
