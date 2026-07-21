@@ -1,10 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Calendar, FolderKanban, MessageCircle, Sparkles, ArrowUpRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Calendar,
+  FolderKanban,
+  MessageCircle,
+  Sparkles,
+  ArrowUpRight,
+  Volume2,
+  Loader2,
+} from "lucide-react";
 
 import { AppShell } from "@/components/lev/app-shell";
 import { LevEmblem } from "@/components/lev/emblem";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  askLev,
+  buildLevContext,
+  loadLevConfig,
+  speakWithLev,
+  stopLevVoice,
+  type LevConfig,
+} from "@/lib/lev-ai";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,15 +43,25 @@ function greetingFor(date: Date) {
 const DIAS = ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"];
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
+type WelcomeState = "idle" | "preparing" | "ready" | "speaking" | "done";
+
 function DashboardPage() {
   const [name, setName] = useState("Eduard");
   const [now, setNow] = useState(() => new Date());
   const [projectCount, setProjectCount] = useState<number | null>(null);
   const [postCount, setPostCount] = useState<number | null>(null);
 
+  // Recepção falada de LEV
+  const [welcomeState, setWelcomeState] = useState<WelcomeState>("idle");
+  const [welcomeText, setWelcomeText] = useState<string | null>(null);
+  const cfgRef = useRef<LevConfig | null>(null);
+
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(t);
+    return () => {
+      clearInterval(t);
+      stopLevVoice();
+    };
   }, []);
 
   useEffect(() => {
@@ -54,8 +80,58 @@ function DashboardPage() {
       ]);
       setProjectCount(pc ?? 0);
       setPostCount(postC ?? 0);
+
+      // Prepara a recepção falada (uma vez por sessão)
+      if (sessionStorage.getItem("lev_welcomed") === "1") return;
+      const cfg = await loadLevConfig();
+      if (!cfg?.geminiKey || !cfg?.elevenKey) return;
+      cfgRef.current = cfg;
+      setWelcomeState("preparing");
+      try {
+        const { saudacao } = greetingFor(new Date());
+        const context = await buildLevContext();
+        const text = await askLev(
+          cfg,
+          [
+            {
+              role: "user",
+              text:
+                `Monte sua fala de recepção: ${cfg.displayName} acabou de entrar no sistema agora (${saudacao.toLowerCase()}).` +
+                ` Comece exatamente com "${saudacao}, Senhor ${cfg.displayName}. Um prazer tê-lo aqui." e então compartilhe sobre o dia dele:` +
+                ` o que merece atenção nos projetos, conteúdo na fila e um foco sugerido.` +
+                ` No máximo 4 frases além da abertura, em texto corrido para ser falado em voz alta, sem listas nem emojis.`,
+            },
+          ],
+          context,
+        );
+        setWelcomeText(text);
+        // Tenta falar automaticamente; se o navegador bloquear, mostra o botão
+        try {
+          setWelcomeState("speaking");
+          const audio = await speakWithLev(cfg, text);
+          sessionStorage.setItem("lev_welcomed", "1");
+          audio.onended = () => setWelcomeState("done");
+        } catch {
+          setWelcomeState("ready");
+        }
+      } catch {
+        setWelcomeState("idle");
+      }
     });
   }, []);
+
+  const playWelcome = async () => {
+    const cfg = cfgRef.current;
+    if (!cfg || !welcomeText) return;
+    try {
+      setWelcomeState("speaking");
+      const audio = await speakWithLev(cfg, welcomeText);
+      sessionStorage.setItem("lev_welcomed", "1");
+      audio.onended = () => setWelcomeState("done");
+    } catch {
+      setWelcomeState("ready");
+    }
+  };
 
   const { saudacao } = greetingFor(now);
   const dataFmt = `${DIAS[now.getDay()]}, ${now.getDate()} de ${MESES[now.getMonth()]}`;
@@ -71,12 +147,37 @@ function DashboardPage() {
             </p>
             <h1 className="font-serif text-4xl md:text-6xl leading-[1.05] text-foreground">
               {saudacao},{" "}
-              <span className="italic text-gold">{name}</span>.
+              <span className="italic text-gold">Senhor {name}</span>.
             </h1>
-            <p className="mt-4 text-base md:text-lg text-muted-foreground max-w-xl">
-              LEV está atento. Aqui está sua central para hoje — projetos, briefings, conteúdo e conversa direta.
-            </p>
+
+            {welcomeText ? (
+              <p className="mt-4 text-base md:text-lg text-muted-foreground max-w-xl leading-relaxed">
+                {welcomeText}
+              </p>
+            ) : (
+              <p className="mt-4 text-base md:text-lg text-muted-foreground max-w-xl">
+                {welcomeState === "preparing"
+                  ? "LEV está preparando sua recepção…"
+                  : "LEV está atento. Aqui está sua central para hoje — projetos, briefings, conteúdo e conversa direta."}
+              </p>
+            )}
+
             <div className="mt-8 flex flex-wrap gap-3">
+              {welcomeState === "ready" && (
+                <button
+                  onClick={() => void playWelcome()}
+                  className="inline-flex items-center gap-2 rounded-md bg-gold px-5 py-2.5 text-sm font-medium tracking-wide shadow-gold transition hover:opacity-90 animate-pulse"
+                >
+                  <Volume2 className="h-4 w-4" />
+                  Receber LEV
+                </button>
+              )}
+              {welcomeState === "preparing" && (
+                <span className="inline-flex items-center gap-2 rounded-md border border-gold/40 px-5 py-2.5 text-sm text-gold">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Preparando recepção…
+                </span>
+              )}
               <Link
                 to="/chat"
                 className="inline-flex items-center gap-2 rounded-md bg-gold px-5 py-2.5 text-sm font-medium tracking-wide transition hover:opacity-90"
@@ -94,10 +195,10 @@ function DashboardPage() {
             </div>
           </div>
           <div className="hidden md:flex items-center justify-center shrink-0">
-            <LevEmblem size={200} active />
+            <LevEmblem size={200} active={welcomeState === "speaking" || welcomeState === "preparing"} />
           </div>
           <div className="md:hidden self-center">
-            <LevEmblem size={140} active />
+            <LevEmblem size={140} active={welcomeState === "speaking"} />
           </div>
         </section>
 
@@ -142,7 +243,7 @@ function DashboardPage() {
           <DashCard
             title="Conversa com LEV"
             eyebrow="Direta"
-            body="Estratégia, análise e voz. Fale por texto ou microfone."
+            body="Estratégia, análise e voz. Fale por texto, microfone ou Modo Voz."
             href="/chat"
             icon={<MessageCircle className="h-5 w-5" />}
           />
