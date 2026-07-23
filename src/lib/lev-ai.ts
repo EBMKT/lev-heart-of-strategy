@@ -56,6 +56,31 @@ export function levSystemPrompt(cfg: LevConfig): string {
 
 type ChatMessage = { role: "user" | "model"; text: string };
 
+// Modelos em ordem de preferência — usa o primeiro que a chave aceitar
+const GEMINI_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-flash-latest",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+  "gemini-2.5-pro",
+];
+let workingModel: string | null = null;
+
+async function geminiCall(
+  cfg: LevConfig,
+  model: string,
+  body: unknown,
+): Promise<Response> {
+  return fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cfg.geminiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+}
+
 export async function askLev(
   cfg: LevConfig,
   history: ChatMessage[],
@@ -66,36 +91,49 @@ export async function askLev(
       "Adicione sua chave do Google Gemini em Ajustes para conversar com LEV (há plano gratuito em aistudio.google.com).",
     );
   }
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${cfg.geminiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [
-            {
-              text:
-                levSystemPrompt(cfg) +
-                (extraContext ? `\n\nContexto atual de ${cfg.displayName}:\n${extraContext}` : ""),
-            },
-          ],
+  const body = {
+    systemInstruction: {
+      parts: [
+        {
+          text:
+            levSystemPrompt(cfg) +
+            (extraContext ? `\n\nContexto atual de ${cfg.displayName}:\n${extraContext}` : ""),
         },
-        contents: history.map((m) => ({ role: m.role, parts: [{ text: m.text }] })),
-        generationConfig: { temperature: 0.7 },
-      }),
+      ],
     },
-  );
-  if (!res.ok) {
-    throw new Error(`LEV não alcançou o Gemini (HTTP ${res.status}). Verifique sua chave em Ajustes.`);
+    contents: history.map((m) => ({ role: m.role, parts: [{ text: m.text }] })),
+    generationConfig: { temperature: 0.7 },
+  };
+
+  const models = workingModel
+    ? [workingModel, ...GEMINI_MODELS.filter((m) => m !== workingModel)]
+    : GEMINI_MODELS;
+
+  let lastStatus = 0;
+  for (const model of models) {
+    const res = await geminiCall(cfg, model, body);
+    if (res.ok) {
+      workingModel = model;
+      const json = await res.json();
+      const text: string =
+        json?.candidates?.[0]?.content?.parts
+          ?.map((p: { text?: string }) => p.text ?? "")
+          .join("") ?? "";
+      if (!text) throw new Error("LEV não conseguiu responder agora. Tente novamente.");
+      return text;
+    }
+    lastStatus = res.status;
+    // 404 = modelo indisponível para esta chave → tenta o próximo; outros erros param aqui
+    if (res.status !== 404) break;
   }
-  const json = await res.json();
-  const text: string =
-    json?.candidates?.[0]?.content?.parts
-      ?.map((p: { text?: string }) => p.text ?? "")
-      .join("") ?? "";
-  if (!text) throw new Error("LEV não conseguiu responder agora. Tente novamente.");
-  return text;
+
+  if (lastStatus === 400 || lastStatus === 403) {
+    throw new Error("Chave do Gemini inválida ou sem permissão. Gere uma nova em aistudio.google.com e cole em Ajustes.");
+  }
+  if (lastStatus === 429) {
+    throw new Error("Limite gratuito do Gemini atingido por agora. Aguarde um minuto e tente de novo.");
+  }
+  throw new Error(`LEV não alcançou o Gemini (HTTP ${lastStatus}). Verifique sua chave em Ajustes.`);
 }
 
 /** Monta um resumo dos dados atuais (projetos + posts) para dar contexto ao LEV. */
