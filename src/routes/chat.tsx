@@ -72,6 +72,17 @@ function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
 
+  // Pergunta vinda da busca "Pergunte ao Lev…"
+  useEffect(() => {
+    if (!cfg) return;
+    const q = sessionStorage.getItem("lev_ask");
+    if (q) {
+      sessionStorage.removeItem("lev_ask");
+      void send(q);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cfg]);
+
   const play = async (text: string) => {
     if (!cfg) return;
     try {

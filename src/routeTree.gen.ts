@@ -10,16 +10,25 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BriefingsRouteImport } from './routes/briefings'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
+import { Route as FinancasRouteImport } from './routes/financas'
+import { Route as MindRouteImport } from './routes/mind'
+import { Route as MinistracoesRouteImport } from './routes/ministracoes'
 import { Route as ProjetosRouteImport } from './routes/projetos'
 import { Route as RedesRouteImport } from './routes/redes'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgendaRoute = AgendaRouteImport.update({
+  id: '/agenda',
+  path: '/agenda',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -42,6 +51,21 @@ const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
   path: '/configuracoes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FinancasRoute = FinancasRouteImport.update({
+  id: '/financas',
+  path: '/financas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MindRoute = MindRouteImport.update({
+  id: '/mind',
+  path: '/mind',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MinistracoesRoute = MinistracoesRouteImport.update({
+  id: '/ministracoes',
+  path: '/ministracoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjetosRoute = ProjetosRouteImport.update({
   id: '/projetos',
   path: '/projetos',
@@ -55,29 +79,41 @@ const RedesRoute = RedesRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agenda': typeof AgendaRoute
   '/auth': typeof AuthRoute
   '/briefings': typeof BriefingsRoute
   '/chat': typeof ChatRoute
   '/configuracoes': typeof ConfiguracoesRoute
+  '/financas': typeof FinancasRoute
+  '/mind': typeof MindRoute
+  '/ministracoes': typeof MinistracoesRoute
   '/projetos': typeof ProjetosRoute
   '/redes': typeof RedesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agenda': typeof AgendaRoute
   '/auth': typeof AuthRoute
   '/briefings': typeof BriefingsRoute
   '/chat': typeof ChatRoute
   '/configuracoes': typeof ConfiguracoesRoute
+  '/financas': typeof FinancasRoute
+  '/mind': typeof MindRoute
+  '/ministracoes': typeof MinistracoesRoute
   '/projetos': typeof ProjetosRoute
   '/redes': typeof RedesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agenda': typeof AgendaRoute
   '/auth': typeof AuthRoute
   '/briefings': typeof BriefingsRoute
   '/chat': typeof ChatRoute
   '/configuracoes': typeof ConfiguracoesRoute
+  '/financas': typeof FinancasRoute
+  '/mind': typeof MindRoute
+  '/ministracoes': typeof MinistracoesRoute
   '/projetos': typeof ProjetosRoute
   '/redes': typeof RedesRoute
 }
@@ -85,38 +121,54 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agenda'
     | '/auth'
     | '/briefings'
     | '/chat'
     | '/configuracoes'
+    | '/financas'
+    | '/mind'
+    | '/ministracoes'
     | '/projetos'
     | '/redes'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/agenda'
     | '/auth'
     | '/briefings'
     | '/chat'
     | '/configuracoes'
+    | '/financas'
+    | '/mind'
+    | '/ministracoes'
     | '/projetos'
     | '/redes'
   id:
     | '__root__'
     | '/'
+    | '/agenda'
     | '/auth'
     | '/briefings'
     | '/chat'
     | '/configuracoes'
+    | '/financas'
+    | '/mind'
+    | '/ministracoes'
     | '/projetos'
     | '/redes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgendaRoute: typeof AgendaRoute
   AuthRoute: typeof AuthRoute
   BriefingsRoute: typeof BriefingsRoute
   ChatRoute: typeof ChatRoute
   ConfiguracoesRoute: typeof ConfiguracoesRoute
+  FinancasRoute: typeof FinancasRoute
+  MindRoute: typeof MindRoute
+  MinistracoesRoute: typeof MinistracoesRoute
   ProjetosRoute: typeof ProjetosRoute
   RedesRoute: typeof RedesRoute
 }
@@ -128,6 +180,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agenda': {
+      id: '/agenda'
+      path: '/agenda'
+      fullPath: '/agenda'
+      preLoaderRoute: typeof AgendaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -158,6 +217,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConfiguracoesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/financas': {
+      id: '/financas'
+      path: '/financas'
+      fullPath: '/financas'
+      preLoaderRoute: typeof FinancasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mind': {
+      id: '/mind'
+      path: '/mind'
+      fullPath: '/mind'
+      preLoaderRoute: typeof MindRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ministracoes': {
+      id: '/ministracoes'
+      path: '/ministracoes'
+      fullPath: '/ministracoes'
+      preLoaderRoute: typeof MinistracoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projetos': {
       id: '/projetos'
       path: '/projetos'
@@ -177,13 +257,27 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgendaRoute: AgendaRoute,
   AuthRoute: AuthRoute,
   BriefingsRoute: BriefingsRoute,
   ChatRoute: ChatRoute,
   ConfiguracoesRoute: ConfiguracoesRoute,
+  FinancasRoute: FinancasRoute,
+  MindRoute: MindRoute,
+  MinistracoesRoute: MinistracoesRoute,
   ProjetosRoute: ProjetosRoute,
   RedesRoute: RedesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

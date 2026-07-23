@@ -14,6 +14,255 @@ export type Database = {
   }
   public: {
     Tables: {
+      transacoes: {
+        Row: {
+          categoria: string
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          recorrente: boolean
+          tipo: string
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string
+          data?: string
+          descricao: string
+          id?: string
+          recorrente?: boolean
+          tipo: string
+          user_id: string
+          valor: number
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          recorrente?: boolean
+          tipo?: string
+          user_id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      mind_items: {
+        Row: {
+          arquivado: boolean
+          categoria: string | null
+          conteudo: string
+          created_at: string
+          id: string
+          tags: string[]
+          user_id: string
+        }
+        Insert: {
+          arquivado?: boolean
+          categoria?: string | null
+          conteudo: string
+          created_at?: string
+          id?: string
+          tags?: string[]
+          user_id: string
+        }
+        Update: {
+          arquivado?: boolean
+          categoria?: string | null
+          conteudo?: string
+          created_at?: string
+          id?: string
+          tags?: string[]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_news: {
+        Row: {
+          created_at: string
+          data: string
+          fonte: string | null
+          id: string
+          resumo: string | null
+          titulo: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          data?: string
+          fonte?: string | null
+          id?: string
+          resumo?: string | null
+          titulo: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          fonte?: string | null
+          id?: string
+          resumo?: string | null
+          titulo?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
+      revelare_metrics: {
+        Row: {
+          assinantes_ativos: number | null
+          created_at: string
+          data: string
+          novas_assinaturas_24h: number | null
+          novas_assinaturas_7d: number | null
+          usuarios_24h: number | null
+          usuarios_7d: number | null
+          usuarios_total: number | null
+        }
+        Insert: {
+          assinantes_ativos?: number | null
+          created_at?: string
+          data: string
+          novas_assinaturas_24h?: number | null
+          novas_assinaturas_7d?: number | null
+          usuarios_24h?: number | null
+          usuarios_7d?: number | null
+          usuarios_total?: number | null
+        }
+        Update: {
+          assinantes_ativos?: number | null
+          created_at?: string
+          data?: string
+          novas_assinaturas_24h?: number | null
+          novas_assinaturas_7d?: number | null
+          usuarios_24h?: number | null
+          usuarios_7d?: number | null
+          usuarios_total?: number | null
+        }
+        Relationships: []
+      }
+      ministracoes: {
+        Row: {
+          conteudo: string | null
+          created_at: string
+          data_origem: string | null
+          id: string
+          origem: string
+          origem_id: string | null
+          referencia: string | null
+          titulo: string
+          user_id: string | null
+        }
+        Insert: {
+          conteudo?: string | null
+          created_at?: string
+          data_origem?: string | null
+          id?: string
+          origem?: string
+          origem_id?: string | null
+          referencia?: string | null
+          titulo: string
+          user_id?: string | null
+        }
+        Update: {
+          conteudo?: string | null
+          created_at?: string
+          data_origem?: string | null
+          id?: string
+          origem?: string
+          origem_id?: string | null
+          referencia?: string | null
+          titulo?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      agenda_items: {
+        Row: {
+          concluido: boolean
+          created_at: string
+          data: string
+          detalhe: string | null
+          hora: string | null
+          id: string
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          concluido?: boolean
+          created_at?: string
+          data?: string
+          detalhe?: string | null
+          hora?: string | null
+          id?: string
+          titulo: string
+          user_id: string
+        }
+        Update: {
+          concluido?: boolean
+          created_at?: string
+          data?: string
+          detalhe?: string | null
+          hora?: string | null
+          id?: string
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_state: {
+        Row: {
+          data: string
+          energia: number | null
+          foco: string | null
+          foco_detalhe: string | null
+          prioridade: string | null
+          prioridade_detalhe: string | null
+          user_id: string
+        }
+        Insert: {
+          data?: string
+          energia?: number | null
+          foco?: string | null
+          foco_detalhe?: string | null
+          prioridade?: string | null
+          prioridade_detalhe?: string | null
+          user_id: string
+        }
+        Update: {
+          data?: string
+          energia?: number | null
+          foco?: string | null
+          foco_detalhe?: string | null
+          prioridade?: string | null
+          prioridade_detalhe?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_verse: {
+        Row: {
+          created_at: string
+          data: string
+          referencia: string
+          texto: string
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          referencia: string
+          texto: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          referencia?: string
+          texto?: string
+        }
+        Relationships: []
+      }
       briefings: {
         Row: {
           audio_url: string | null
